@@ -1,0 +1,7 @@
+#!/usr/bin/env sh
+# Compile draft.typ to a PDF once.
+set -eu
+
+root="$(cd "$(dirname "$0")/.." && pwd)"
+typst compile "$root/draft.typ" "$root/draft.pdf"
+echo "built draft.pdf"

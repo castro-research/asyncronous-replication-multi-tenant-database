@@ -1,0 +1,124 @@
+# Local replication topology.
+#
+#   db0  -> source of truth (France).      Public tables are read-write here.
+#   db1  -> Portugal replica.              Public tables read-only; Entry read-write.
+#   db2  -> Spain replica.
+#   db3  -> Portugal replica.
+#   kafka    -> Apache Kafka 4.0 (KRaft) broker carrying the replication events.
+#   karafka  -> consumer that applies the replicated changes onto db1/db2/db3.
+#
+# Each Postgres is a separate physical instance so the PoC genuinely propagates
+# data node-to-node, rather than across schemas of one database.
+name: replicateable-tables
+
+x-db: &db
+  image: timescale/timescaledb:2.24.0-pg18
+  environment:
+    - POSTGRES_PASSWORD=dev
+  healthcheck:
+    test: ["CMD", "pg_isready", "-U", "postgres"]
+    interval: 10s
+    timeout: 5s
+    retries: 5
+
+services:
+  db0:
+    <<: *db
+    ports:
+      - "5440:5432"
+    volumes:
+      - db0:/var/lib/postgresql
+
+  db1:
+    <<: *db
+    ports:
+      - "5433:5432"
+    volumes:
+      - db1:/var/lib/postgresql
+
+  db2:
+    <<: *db
+    ports:
+      - "5434:5432"
+    volumes:
+      - db2:/var/lib/postgresql
+
+  db3:
+    <<: *db
+    ports:
+      - "5435:5432"
+    volumes:
+      - db3:/var/lib/postgresql
+
+  # Apache Kafka 4.0 in KRaft mode (no ZooKeeper): a single node acting as both
+  # broker and controller. Two client listeners — internal kafka:29092 for the
+  # containers, localhost:9092 for the host.
+  kafka:
+    image: apache/kafka:4.3.0
+    hostname: kafka
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_LISTENERS: INTERNAL://0.0.0.0:29092,HOST://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:29092,HOST://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,HOST:PLAINTEXT,CONTROLLER:PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server localhost:9092 >/dev/null 2>&1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  # Web UI to inspect topics/messages as they arrive. http://localhost:8080
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    ports:
+      - "8080:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: replicateable
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
+      DYNAMIC_CONFIG_ENABLED: "true"
+    depends_on:
+      kafka:
+        condition: service_healthy
+
+  # Consumer that applies replicated changes onto the replicas. Connects to every
+  # node by service name (internal 5432) and to the broker at kafka:29092.
+  karafka:
+    build:
+      context: .
+      dockerfile: Dockerfile.consumer
+    environment:
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
+      - DB0_HOST=db0
+      - DB1_HOST=db1
+      - DB2_HOST=db2
+      - DB3_HOST=db3
+      - DB0_PORT=5432
+      - DB1_PORT=5432
+      - DB2_PORT=5432
+      - DB3_PORT=5432
+    depends_on:
+      db0:
+        condition: service_healthy
+      db1:
+        condition: service_healthy
+      db2:
+        condition: service_healthy
+      db3:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+
+volumes:
+  db0:
+  db1:
+  db2:
+  db3:

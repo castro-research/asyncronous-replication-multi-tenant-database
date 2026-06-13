@@ -1,0 +1,6 @@
+#!/usr/bin/env sh
+# Watch draft.typ and recompile draft.pdf on every change.
+set -eu
+
+root="$(cd "$(dirname "$0")/.." && pwd)"
+exec typst watch "$root/draft.typ" "$root/draft.pdf"
