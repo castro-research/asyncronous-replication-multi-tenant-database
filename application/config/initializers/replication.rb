@@ -2,7 +2,7 @@
 # source is the :default connection (DB0); these are the replica connections (see
 # ApplicationRecord.connects_to). Defined here, not in the autoloaded concern,
 # because karafka.rb references it at boot before Zeitwerk is ready.
-REPLICATION_SHARDS = %i[db1 db2 db3].freeze
+REPLICATION_SHARDS = %i[db1 db2 db3 db4].freeze
 
 # The two replication actions carried in the Kafka `action` header. Defined here
 # (not on a class) so both the producer and the model concern can reference them

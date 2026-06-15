@@ -9,6 +9,7 @@ class ApplicationRecord < ActiveRecord::Base
     default: { writing: :primary },
     db1: { writing: :db1 },
     db2: { writing: :db2 },
-    db3: { writing: :db3 }
+    db3: { writing: :db3 },
+    db4: { writing: :db4 }
   }
 end

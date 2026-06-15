@@ -20,6 +20,8 @@ class PublicData::BaseProducer < ApplicationProducer
 
   # Real path: hand the event to Kafka and let the consumer on the shard apply it.
   def produce
+    return true unless table_on_shard?
+
     logger.debug { "Producing public data for #{topic_name}" }
 
     Karafka.producer.produce_sync(
@@ -35,6 +37,8 @@ class PublicData::BaseProducer < ApplicationProducer
   # Inline path: apply straight to the shard's database without a broker. Returns
   # the service result so callers can detect failures, exactly like the reference.
   def produce_now
+    return true unless table_on_shard?
+
     service_result = PublicDataService.call(@subdomain, consumer_klass.base_klass, @action, build_attributes)
 
     if service_result.failure?
@@ -42,6 +46,23 @@ class PublicData::BaseProducer < ApplicationProducer
     end
 
     true
+  end
+
+  # A replica is only a valid target if it actually owns the public table. A
+  # not-properly-configured node (e.g. db4: shares db3's instance but points at a
+  # schema without the public tables) is missing it — producing there would just
+  # fail downstream, so we skip it instead. Schema cache is reset per check so a
+  # node provisioned after boot is picked up without a restart.
+  def table_on_shard?
+    klass = consumer_klass.base_klass
+
+    ConnectionSwitcher.switch_shard(@subdomain) do
+      klass.connection.schema_cache.clear!
+      klass.connection.table_exists?(klass.table_name)
+    end
+  rescue ActiveRecord::NoDatabaseError, ActiveRecord::ConnectionNotEstablished => e
+    logger.warn { "Skipping replication to #{@subdomain}: #{e.class} #{e.message}" }
+    false
   end
 
   def topic_name

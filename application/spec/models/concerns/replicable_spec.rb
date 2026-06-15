@@ -17,7 +17,7 @@ RSpec.describe Replicable do
       Manufacturer.create!(name: "Sensus", tenant: tenant)
     end
 
-    it "fans out to db1, db2 and db3" do
+    it "fans out to every replication shard" do
       received = []
       allow(PublicData::ManufacturerProducer).to receive(:call) { |shard, *_| received << shard }
 

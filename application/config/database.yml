@@ -49,6 +49,18 @@ development:
     host: <%= db3_host %>
     port: <%= db3_port %>
     migrations_paths: db/migrate
+  # DB4 Context:
+  # Simulate a not-properly-configured node. It is not a separate database: it
+  # points at db3's physical instance but at a schema (db4) that does not own the
+  # public tables, so the replicated table is absent there. database_tasks: false
+  # so migrations never run against it. Producing to it must skip gracefully.
+  db4:
+    <<: *default
+    database: replicateable_db3_development
+    host: <%= db3_host %>
+    port: <%= db3_port %>
+    schema_search_path: "db4"
+    database_tasks: false
 
 # In test the four connections share one physical database. Specs use
 # karafka-testing (no broker); switch_shard still changes the active shard so the
@@ -77,6 +89,16 @@ test:
     database: replicateable_test<%= ENV["TEST_ENV_NUMBER"] %>
     host: <%= db0_host %>
     port: <%= db0_port %>
+    database_tasks: false
+  # A not-properly-configured node: it shares the physical DB but points at a
+  # schema (db4) that does not own the public tables, so the replicated table is
+  # absent. Producing to it must skip gracefully (see table-existence guard).
+  db4:
+    <<: *default
+    database: replicateable_test<%= ENV["TEST_ENV_NUMBER"] %>
+    host: <%= db0_host %>
+    port: <%= db0_port %>
+    schema_search_path: "db4"
     database_tasks: false
 
 production:

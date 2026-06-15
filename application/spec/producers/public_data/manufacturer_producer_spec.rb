@@ -66,4 +66,26 @@ RSpec.describe PublicData::ManufacturerProducer do
       expect(message[:headers]).to include("action" => "delete")
     end
   end
+
+  # db4 is a not-properly-configured node: it points at db3's instance but at a
+  # schema (db4) that does not own the public tables, so the table is absent
+  # there. The producer must skip it instead of emitting an event that would only
+  # fail downstream.
+  describe "a shard whose table is missing (db4)" do
+    before do
+      ApplicationRecord.connected_to(role: :writing, shard: :db4) do
+        ApplicationRecord.connection.execute("CREATE SCHEMA IF NOT EXISTS db4")
+      end
+    end
+
+    it "does not emit a Kafka message" do
+      emit(:db4, "upsert", manufacturer)
+      expect(karafka.produced_messages).to be_empty
+    end
+
+    it "returns true (treated as a successful no-op) on the inline path" do
+      manufacturer # ensure the row exists
+      expect(described_class.call(:db4, "upsert", manufacturer)).to be(true)
+    end
+  end
 end
