@@ -16,3 +16,6 @@ Cada banco de dados precisa ter uma cópia dessas informações, para que o sist
 
 O artigo talvez será publicado no ResearchGate, mas sem peso acadêmico, então o foco é mais na clareza e na descrição do problema do que em formalismos rigorosos.
 
+# Código fonte
+
+- Experimento usando [Broker para replicação de dados](https://github.com/alexcastrodev/thesis-data-replicator-broker)

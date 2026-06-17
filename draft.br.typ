@@ -178,16 +178,16 @@ For brevity we refer to the participating databases as follows:
   stroke: 0.5pt + luma(200),
   inset: 6pt,
   table.header([*Node*], [*Role*]),
-  [DB0], [France, source of truth for replicated data],
-  [DB1, DB3], [Located physically Portugal],
-  [DB2], [Located physically Spain],
+  [DB0], [França, fonte de verdade para dados replicados],
+  [DB1, DB3], [Fisicamente em Portugal],
+  [DB2], [Fisicamente em Espanha],
 )
 
-DB0 is the single writer for the replicated configuration tables; all other
-nodes are read replicas with respect to that data, while remaining full owners of
-their own tenant-specific data.
+A DB0 é o único escritor para as tabelas de configuração replicadas. Todos os outros
+nós são réplicas de leitura em relação a esses dados, enquanto permanecem proprietários
+completos de seus próprios dados específicos do Tenant.
 
-A clear ownership boundary separates the two classes of data on every node:
+Uma clara separação de propriedade distingue as duas classes de dados em cada nó:
 
 #table(
   columns: (auto, auto, auto),
@@ -199,13 +199,13 @@ A clear ownership boundary separates the two classes of data on every node:
   [Tenant], [n/a], [read-write],
 )
 
-The replicated tables are *never written directly* on a tenant node. The only
-party that may modify them is DB0, which then propagates the change downstream;
-on DB1, DB2, and DB3 these tables are strictly read-only. Conversely, the
-tenant-owned tables are read-write only on the node that owns them, and are not
-subject to replication.
+As tabelas replicadas *nunca são escritas diretamente* em um nó de tenant. A única
+entidade que pode modificá-las é o DB0, que então propaga a mudança para os nós
+subsequentes; no DB1, DB2 e DB3 essas tabelas são estritamente somente leitura.
+Por outro lado, as tabelas de propriedade do tenant são somente leitura e escrita
+apenas no nó que as possui, e não estão sujeitas à replicação.
 
-= Constraints and Boundaries
+= Limitações e Barreiras
 
 The replication mechanism operates under the following constraints:
 
@@ -228,7 +228,12 @@ The replication mechanism operates under the following constraints:
   flow downstream. Only the tenant-owned tables are read-write, and only on their
   owning node.
 
-= (DRAFT) Future Work
+
+= Replicação por Assinatura de Eventos
+
+
+
+= (DRAFT) Investigação Futura
 
 A central open question concerns deletions. When a row is deleted in DB0, the
 same row should be deleted in DB1, DB2, and DB3. If that row is referenced by a

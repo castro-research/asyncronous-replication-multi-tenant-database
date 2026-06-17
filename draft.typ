@@ -179,8 +179,8 @@ For brevity we refer to the participating databases as follows:
   inset: 6pt,
   table.header([*Node*], [*Role*]),
   [DB0], [France, source of truth for replicated data],
-  [DB1, DB3], [Located physically Portugal],
-  [DB2], [Located physically Spain],
+  [DB1, DB3], [Located physically in Portugal],
+  [DB2], [Located physically in Spain],
 )
 
 DB0 is the single writer for the replicated configuration tables; all other
