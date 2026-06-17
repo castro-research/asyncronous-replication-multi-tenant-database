@@ -18,4 +18,6 @@ O artigo talvez será publicado no ResearchGate, mas sem peso acadêmico, então
 
 # Código fonte
 
-- Experimento usando [Broker para replicação de dados](https://github.com/alexcastrodev/thesis-data-replicator-broker)
+- [Experimento usando Broker para replicação de dados](https://github.com/alexcastrodev/thesis-data-replicator-broker)
+
+- [Experimento usando Pub/Sub do PostgreSQL para replicação de dados](https://github.com/alexcastrodev/thesis-data-replicator-pubsub)
